@@ -2,13 +2,16 @@ package main
 
 import(
 	"os"
+	"fmt"
+	"strconv"
 	"encoding/json"
 )
 
 func main() {
-	//Get Clips for show by slug, then parse useful info
+	//Get All Clips
 	clips := GetAllClips("behind-the-bastards")
 	list := parseClips(clips)
+	length := len(list)
 	
 	//Output to File
 	data, jsonErr := json.MarshalIndent(list, "", "	")
@@ -19,4 +22,5 @@ func main() {
 	if saveErr != nil {
 		panic(saveErr)
 	}
+	fmt.Println(strconv.Itoa(length) + " Episodes Found")
 }

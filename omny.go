@@ -3,6 +3,7 @@ package main
 import(
 	"log"
 	"time"
+	"strconv"
 	"net/http"
 	"io/ioutil"
 	"encoding/json"
@@ -83,7 +84,46 @@ type RecordingMetaData struct {
 type ProgramSlugResp struct {
 	Clips []Clip
 	Cursor string
-	Total int
+	TotalCount int
+}
+
+//Playlist
+type Playlist struct {
+	ArtworkUrl string
+	Categories []string
+	ContentRating string
+	CustomFieldData map[string]string
+	Description string
+	DescriptionHtml string
+	DirectoryLinks DirectoryLinks
+	EmbedUrl string
+	Id string
+	ModifiedAtUtc string
+	NumberOfClips int32
+	OrganizationId string
+	ProgramId string
+	ProgramSlug string
+	RssFeedUrl string
+	Slug string
+	Summary string
+	Title string
+	Visibility string
+}
+
+type DirectoryLinks struct {
+	AmazonMusic string
+	ApplePodcasts string
+	ApplePodcastsId string
+	GooglePodcasts string
+	IHeart string
+	RssFeed string
+	Spotify string
+	Stitcher string
+	TuneIn string
+}
+
+type PlaylistResp struct {
+	Playlists []Playlist
 }
 
 //Non-API (Formmated Ouput of golang program)
@@ -156,14 +196,38 @@ func getOrgID(programSlug string) string {
 	return orgID
 }
 
-func GetClips(programSlug string) []Clip {
+func GetClips(programSlug string, cursor string) ([]Clip, string) {
+	//Get Clips uses a page system, the cursor is a string number (Ex:"1") that says what page of results you are on.
+	
 	orgID := getOrgID(programSlug)
 	progID := getProgramID(programSlug)
 
-	url := APIURL + "orgs/" + orgID + "/programs/" + progID + "/clips"
+	url := APIURL + "orgs/" + orgID + "/programs/" + progID + "/clips?Cursor=" + cursor
 	bytes := getAPI(url)
 	
 	var data ProgramSlugResp 
+	if err := json.Unmarshal(bytes, &data); err != nil {
+		log.Fatal(err)
+	}
+	
+	return data.Clips, data.Cursor
+}
+
+func GetAllClips(programSlug string) []Clip {
+	orgID := getOrgID(programSlug)
+	progID := getProgramID(programSlug)
+	var data ProgramSlugResp 
+	
+	//First time is to get episode Count
+	url := APIURL + "orgs/" + orgID + "/programs/" + progID + "/clips"
+	bytes := getAPI(url)
+	if err := json.Unmarshal(bytes, &data); err != nil {
+		log.Fatal(err)
+	}
+	
+	//Second time is for real
+	url = APIURL + "orgs/" + orgID + "/programs/" + progID + "/clips?pageSize=" + strconv.Itoa(data.TotalCount)
+	bytes = getAPI(url)
 	if err := json.Unmarshal(bytes, &data); err != nil {
 		log.Fatal(err)
 	}
@@ -171,20 +235,19 @@ func GetClips(programSlug string) []Clip {
 	return data.Clips
 }
 
-//Gets Up to 1000 clips (TODO: can get total clips from program, and then target it specifically)
-func GetAllClips(programSlug string) []Clip {
+func GetPlaylists(programSlug string) []Playlist {
 	orgID := getOrgID(programSlug)
 	progID := getProgramID(programSlug)
 
-	url := APIURL + "orgs/" + orgID + "/programs/" + progID + "/clips?pageSize=1000"
+	url := APIURL + "orgs/" + orgID + "/programs/" + progID + "/playlists"
 	bytes := getAPI(url)
 	
-	var data ProgramSlugResp 
+	var data PlaylistResp 
 	if err := json.Unmarshal(bytes, &data); err != nil {
 		log.Fatal(err)
 	}
 	
-	return data.Clips
+	return data.Playlists
 }
 
 /*----------------------------------------------*/
