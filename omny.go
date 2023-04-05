@@ -1,4 +1,4 @@
-package main
+package omny
 
 import(
 	"log"
@@ -131,6 +131,7 @@ type FormatClip struct {
 	Name string
 	URL string
 	Image string
+	Size int64
 }
 
 /*----------------------------------------------*/
@@ -260,6 +261,7 @@ func parseClips(clips []Clip) []*FormatClip {
 			Name:clip.Title,
 			URL:clip.AudioUrl,
 			Image:clip.ImageUrl,
+			Size:clip.PublishedAudioSizeInBytes,
 		}
 		list = append(list, out)
 	}
